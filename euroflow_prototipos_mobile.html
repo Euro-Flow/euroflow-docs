@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EuroFlow — 6 Telas</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:linear-gradient(145deg,#060E1A 0%,#0D1F2D 40%,#091A0E 100%);min-height:100vh;font-family:'Sora',sans-serif;padding:40px 20px;}
+::-webkit-scrollbar{display:none;}
+input,button,textarea{font-family:inherit;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(110%)}to{transform:translateY(0)}}
+@keyframes pop{0%{opacity:0;transform:scale(.8)}70%{transform:scale(1.05)}100%{opacity:1;transform:scale(1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes pulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:.15;transform:scale(1.22)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes streakIn{from{width:0}to{width:var(--w)}}
+@keyframes notifDrop{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+.f-up{animation:fadeUp .45s cubic-bezier(.34,1.2,.64,1) both}
+.pop{animation:pop .4s cubic-bezier(.34,1.5,.64,1) both}
+.float{animation:float 3.4s ease-in-out infinite}
+.d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}
+.d4{animation-delay:.32s}.d5{animation-delay:.40s}.d6{animation-delay:.48s}
+.card-hover{transition:transform .18s,box-shadow .18s;}
+.card-hover:hover{transform:translateY(-2px);}
+
+.page-title{color:#fff;font-size:28px;font-weight:800;text-align:center;margin-bottom:8px;letter-spacing:-.5px;}
+.page-sub{color:rgba(255,255,255,.45);font-size:14px;text-align:center;font-family:'DM Sans',sans-serif;margin-bottom:48px;}
+.screens-grid{display:flex;flex-wrap:wrap;gap:48px;justify-content:center;align-items:flex-start;}
+.screen-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;}
+.screen-label{color:rgba(255,255,255,.5);font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;font-family:'DM Sans',sans-serif;}
+.screen-num{background:rgba(245,200,0,.15);color:#F5C800;border:1px solid rgba(245,200,0,.3);width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;margin-bottom:4px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+// ── DESIGN TOKENS ──
+const T={
+  navy:"#003087",navyDark:"#001F5B",navyMid:"#004AAD",
+  blue:"#0066CC",blueLight:"#E8F0FB",blueMid:"#1A7FD4",
+  gold:"#F5C800",goldDark:"#C9A200",goldLight:"#FFFBE6",goldGlow:"#F5C80033",
+  slate:"#F0F4FB",card:"#FFFFFF",text:"#001F5B",sub:"#5A6A8A",
+  border:"#D6E2F5",shadow:"rgba(0,48,135,0.10)",
+  coral:"#FF6B6B",emeraldGlow:"#003087",
+};
+
+// ── MASCOT ──
+const FACES={
+  happy:{emoji:"😊",grad:`${T.navy},${T.navyMid}`,glow:T.navy},
+  thinking:{emoji:"🤔",grad:`${T.navyMid},${T.blue}`,glow:T.blue},
+  celebrating:{emoji:"🎉",grad:`${T.gold},${T.goldDark}`,glow:T.gold},
+  guardian:{emoji:"🛡️",grad:`${T.navy},${T.navyDark}`,glow:T.navyMid},
+  waving:{emoji:"👋",grad:`${T.navyMid},${T.navy}`,glow:T.blue},
+  idea:{emoji:"💡",grad:`${T.gold},${T.navyMid}`,glow:T.gold},
+};
+function Mascot({mood="happy",size=64,pulse=false,float:fl=false,style:sx={}}){
+  const f=FACES[mood]||FACES.happy;
+  const[g1,g2]=f.grad.split(",");
+  return(
+    <div className={fl?"float":""} style={{width:size,height:size,position:"relative",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,...sx}}>
+      {pulse&&<div style={{position:"absolute",inset:-6,borderRadius:"50%",background:f.glow+"28",animation:"pulse 2.4s ease-in-out infinite"}}/>}
+      <div style={{width:size,height:size,borderRadius:"50%",background:`radial-gradient(circle at 32% 32%,${g1}EE,${g2}99)`,boxShadow:`0 6px 24px ${f.glow}55,inset 0 -3px 10px rgba(0,0,0,.14)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.46,border:`2.5px solid ${f.glow}44`,position:"relative",zIndex:1}}>{f.emoji}</div>
+    </div>
+  );
+}
+
+// ── PHONE FRAME ──
+function Phone({children,bar="#0A2540"}){
+  return(
+    <div style={{width:393,height:820,background:T.card,borderRadius:52,overflow:"hidden",flexShrink:0,boxShadow:"0 56px 100px rgba(0,0,0,.6),0 0 0 11px #252E3D,0 0 0 14px #181E28",display:"flex",flexDirection:"column",position:"relative"}}>
+      <div style={{background:bar,padding:"13px 24px 5px",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0,transition:"background .4s"}}>
+        <span style={{color:"rgba(255,255,255,.8)",fontSize:12,fontWeight:700,fontFamily:"Sora,sans-serif"}}>9:41</span>
+        <div style={{width:90,height:20,background:"rgba(0,0,0,.4)",borderRadius:14,position:"absolute",left:"50%",transform:"translateX(-50%)"}}/>
+        <span style={{color:"rgba(255,255,255,.8)",fontSize:11}}>📶 🔋</span>
+      </div>
+      <div style={{flex:1,overflow:"hidden",position:"relative"}}>{children}</div>
+    </div>
+  );
+}
+
+// ── BOTTOM NAV ──
+function Nav({active,onChange}){
+  const tabs=[
+    {id:"home",icon:"🏠",label:"Início"},
+    {id:"chat",icon:"💬",label:"Euro IA"},
+    {id:"explorer",icon:"🚀",label:"Explorer"},
+    {id:"docs",icon:"📚",label:"Documentos"},
+    {id:"profile",icon:"👤",label:"Perfil"},
+  ];
+  return(
+    <div style={{height:70,background:T.card,borderTop:`1px solid ${T.border}`,display:"flex",flexShrink:0,boxShadow:"0 -4px 20px rgba(10,37,64,.06)"}}>
+      {tabs.map(t=>{
+        const on=active===t.id;
+        return(
+          <button key={t.id} onClick={()=>onChange(t.id)} style={{flex:1,border:"none",background:"transparent",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,cursor:"pointer",position:"relative",transition:"all .18s"}}>
+            {on&&<div style={{position:"absolute",top:0,left:"22%",right:"22%",height:3,background:T.gold,borderRadius:"0 0 6px 6px"}}/>}
+            <span style={{fontSize:20,filter:on?"none":"grayscale(55%)",transform:on?"scale(1.15)":"scale(1)",transition:"transform .2s"}}>{t.icon}</span>
+            <span style={{fontSize:9.5,fontWeight:on?700:500,color:on?T.gold:T.sub,fontFamily:"Sora,sans-serif"}}>{t.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── SCREEN 1: LOGIN ──
+function LoginScreen(){
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.navy,overflow:"hidden",position:"relative"}}>
+      <div style={{position:"absolute",top:-100,right:-80,width:300,height:300,borderRadius:"50%",background:T.gold+"18",filter:"blur(60px)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",bottom:80,left:-90,width:260,height:260,borderRadius:"50%",background:T.blue+"20",filter:"blur(55px)",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",inset:0,backgroundImage:`linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px)`,backgroundSize:"40px 40px",pointerEvents:"none"}}/>
+      <div style={{flex:"0 0 290px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",padding:"0 24px 16px"}}>
+        <div className="f-up" style={{display:"flex",alignItems:"center",gap:10,marginBottom:28}}>
+          <div style={{width:46,height:46,borderRadius:14,background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:`0 8px 28px ${T.navy}55`}}>💊</div>
+          <div>
+            <p style={{color:"#fff",fontWeight:800,fontSize:24,fontFamily:"Sora,sans-serif",letterSpacing:-.6,lineHeight:1}}>Euro<span style={{color:T.gold}}>flow</span></p>
+            <p style={{color:"rgba(255,255,255,.38)",fontSize:10,fontFamily:"DM Sans,sans-serif",letterSpacing:2.5,textTransform:"uppercase",marginTop:2}}>by AXIOM</p>
+          </div>
+        </div>
+        <div className="float"><Mascot mood="waving" size={96} pulse/></div>
+        <div className="f-up d2" style={{textAlign:"center",marginTop:14}}>
+          <p style={{color:"#fff",fontWeight:700,fontSize:17,fontFamily:"Sora,sans-serif",lineHeight:1.4}}>Olá! Eu sou o <span style={{color:T.gold}}>Euro</span> 👋</p>
+          <p style={{color:"rgba(255,255,255,.5)",fontSize:13,fontFamily:"DM Sans,sans-serif",marginTop:4}}>Seu guia na jornada Eurofarma</p>
+        </div>
+      </div>
+      <div style={{flex:1,background:T.card,borderRadius:"32px 32px 0 0",padding:"28px 24px 24px",animation:"slideUp .5s cubic-bezier(.34,1.1,.64,1) both",animationDelay:".1s",boxShadow:"0 -8px 40px rgba(0,0,0,.25)",overflowY:"auto"}}>
+        <h2 style={{fontWeight:800,fontSize:22,color:T.text,fontFamily:"Sora,sans-serif",marginBottom:4}}>Entrar na sua conta</h2>
+        <p style={{color:T.sub,fontSize:13,fontFamily:"DM Sans,sans-serif",marginBottom:24}}>Use suas credenciais corporativas Eurofarma</p>
+        <div style={{marginBottom:14}}>
+          <label style={{fontSize:11.5,fontWeight:600,color:T.sub,fontFamily:"Sora,sans-serif",textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:6}}>E-mail corporativo</label>
+          <div style={{position:"relative"}}>
+            <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}>✉️</span>
+            <div style={{width:"100%",border:`1.5px solid ${T.border}`,borderRadius:14,padding:"13px 14px 13px 44px",fontSize:14,fontFamily:"DM Sans,sans-serif",background:T.slate,color:T.sub}}>voce@eurofarma.com.br</div>
+          </div>
+        </div>
+        <div style={{marginBottom:8}}>
+          <label style={{fontSize:11.5,fontWeight:600,color:T.sub,fontFamily:"Sora,sans-serif",textTransform:"uppercase",letterSpacing:.8,display:"block",marginBottom:6}}>Senha</label>
+          <div style={{position:"relative"}}>
+            <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:16}}>🔒</span>
+            <div style={{width:"100%",border:`1.5px solid ${T.border}`,borderRadius:14,padding:"13px 44px 13px 44px",fontSize:14,fontFamily:"DM Sans,sans-serif",background:T.slate,color:T.text}}>••••••••</div>
+          </div>
+        </div>
+        <div style={{textAlign:"right",marginBottom:22}}><span style={{fontSize:12,color:T.navy,fontWeight:600,fontFamily:"DM Sans,sans-serif",cursor:"pointer"}}>Esqueci minha senha</span></div>
+        <button style={{width:"100%",padding:"15px",background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,border:"none",borderRadius:16,color:"#fff",fontWeight:700,fontSize:15,fontFamily:"Sora,sans-serif",cursor:"pointer",boxShadow:`0 10px 28px ${T.navy}55`,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+          Entrar no EuroFlow <span style={{fontSize:18}}>→</span>
+        </button>
+        <p style={{textAlign:"center",marginTop:18,fontSize:12,color:T.sub,fontFamily:"DM Sans,sans-serif"}}>Problemas de acesso? <span style={{color:T.blue,fontWeight:600}}>Fale com o RH Digital</span></p>
+        <div style={{display:"flex",alignItems:"center",gap:10,margin:"20px 0 16px"}}>
+          <div style={{flex:1,height:1,background:T.border}}/>
+          <span style={{fontSize:12,color:T.sub,fontFamily:"DM Sans,sans-serif",whiteSpace:"nowrap"}}>ou continue com</span>
+          <div style={{flex:1,height:1,background:T.border}}/>
+        </div>
+        <button style={{width:"100%",padding:"12px",background:T.slate,border:`1.5px solid ${T.border}`,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",gap:10,cursor:"pointer"}}>
+          <span style={{fontSize:18}}>🏢</span>
+          <span style={{fontSize:13.5,fontWeight:600,color:T.text,fontFamily:"DM Sans,sans-serif"}}>SSO Corporativo</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 2: DASHBOARD ──
+function DashboardScreen(){
+  const user={name:"Ana Santos",role:"Farmacêutica Sênior",plant:"SP – Guarulhos",pts:340,streak:7};
+  const missions=[
+    {id:1,icon:"📋",text:"Consultar norma de compliance",done:false},
+    {id:2,icon:"🎯",text:"Completar módulo de BPF",done:true},
+    {id:3,icon:"💡",text:"Enviar ideia de inovação",done:false},
+  ];
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.slate,overflow:"hidden"}}>
+      <div style={{background:`linear-gradient(150deg,${T.navy} 0%,${T.navyMid} 55%,${T.navyMid} 130%)`,padding:"16px 18px 68px",position:"relative",overflow:"hidden",flexShrink:0}}>
+        <div style={{position:"absolute",top:-50,right:-40,width:180,height:180,borderRadius:"50%",background:"rgba(255,255,255,.04)"}}/>
+        <div style={{position:"absolute",bottom:-30,left:-20,width:130,height:130,borderRadius:"50%",background:`${T.gold}18`}}/>
+        <div style={{position:"absolute",inset:0,backgroundImage:`radial-gradient(rgba(255,255,255,.06) 1px,transparent 1px)`,backgroundSize:"22px 22px",pointerEvents:"none"}}/>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",position:"relative"}}>
+          <div>
+            <p style={{color:"rgba(255,255,255,.55)",fontSize:12.5,fontFamily:"DM Sans,sans-serif"}}>Bom dia 👋</p>
+            <h2 style={{color:"#fff",fontSize:21,fontWeight:800,fontFamily:"Sora,sans-serif",marginTop:3,letterSpacing:-.4}}>{user.name}</h2>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginTop:8}}>
+              <div style={{background:"rgba(255,255,255,.12)",borderRadius:20,padding:"4px 12px",display:"flex",alignItems:"center",gap:5}}>
+                <span style={{fontSize:13}}>🔥</span>
+                <span style={{color:"#fff",fontSize:12.5,fontWeight:700,fontFamily:"Sora,sans-serif"}}>{user.streak} dias seguidos</span>
+              </div>
+            </div>
+          </div>
+          <Mascot mood="happy" size={66} pulse float/>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",marginTop:-48,padding:"0 14px 14px",position:"relative",zIndex:1}}>
+        <div style={{background:T.card,borderRadius:16,padding:"12px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:14,boxShadow:`0 6px 24px ${T.navy}18`,border:`1.5px solid ${T.navy}22`,animation:"notifDrop .4s ease both"}}>
+          <div style={{width:36,height:36,borderRadius:10,background:T.blueLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🔔</div>
+          <div style={{flex:1}}>
+            <p style={{fontWeight:700,fontSize:12.5,color:T.text,fontFamily:"Sora,sans-serif"}}>Missão disponível!</p>
+            <p style={{fontSize:11.5,color:T.sub,fontFamily:"DM Sans,sans-serif",marginTop:1}}>Consulte uma norma de compliance hoje</p>
+          </div>
+          <span style={{background:"none",border:"none",color:T.sub,fontSize:18,lineHeight:1}}>×</span>
+        </div>
+        <div className="f-up" style={{background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,borderRadius:20,padding:"16px 18px",marginBottom:14,boxShadow:`0 8px 32px rgba(10,37,64,.2)`,position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",right:-16,top:-16,width:100,height:100,borderRadius:"50%",background:`${T.gold}15`}}/>
+          <p style={{color:"rgba(255,255,255,.55)",fontSize:11.5,fontFamily:"DM Sans,sans-serif",textTransform:"uppercase",letterSpacing:1}}>📌 Prioridade hoje</p>
+          <p style={{color:"#fff",fontWeight:700,fontSize:15,fontFamily:"Sora,sans-serif",marginTop:6,lineHeight:1.4}}>Você tem um curso de<br/><span style={{color:T.gold}}>Compliance pendente.</span> Que tal terminar hoje?</p>
+          <button style={{marginTop:12,padding:"9px 18px",background:T.navy,border:"none",borderRadius:12,color:"#fff",fontWeight:700,fontSize:13,fontFamily:"Sora,sans-serif",cursor:"pointer",boxShadow:`0 4px 16px ${T.navy}55`}}>Continuar curso →</button>
+        </div>
+        <div className="f-up d1" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:14}}>
+          {[{label:"Onboarding",pct:68,color:T.navy,icon:"🚀"},{label:"Compliance",pct:35,color:T.blue,icon:"🛡️"}].map((p,i)=>(
+            <div key={i} style={{background:T.card,borderRadius:18,padding:"14px",boxShadow:`0 2px 12px ${T.shadow}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <span style={{fontSize:22}}>{p.icon}</span>
+                <span style={{fontSize:16,fontWeight:800,color:p.color,fontFamily:"Sora,sans-serif"}}>{p.pct}%</span>
+              </div>
+              <p style={{fontSize:12,fontWeight:600,color:T.text,fontFamily:"Sora,sans-serif",marginBottom:8}}>{p.label}</p>
+              <div style={{background:T.slate,borderRadius:20,height:6,overflow:"hidden"}}>
+                <div style={{width:`${p.pct}%`,height:"100%",background:p.color,borderRadius:20}}/>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="f-up d2" style={{background:T.card,borderRadius:18,padding:"14px 16px",marginBottom:14,boxShadow:`0 2px 12px ${T.shadow}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <p style={{fontWeight:700,fontSize:13.5,color:T.text,fontFamily:"Sora,sans-serif"}}>🔥 Ofensiva diária</p>
+            <span style={{fontSize:12,color:T.sub,fontFamily:"DM Sans,sans-serif"}}>{user.streak} / 30 dias</span>
+          </div>
+          <div style={{display:"flex",gap:5}}>
+            {Array.from({length:10}).map((_,i)=>(
+              <div key={i} style={{flex:1,height:28,borderRadius:7,background:i<user.streak?`linear-gradient(135deg,${T.gold},#E8920A)`:T.slate,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,boxShadow:i<user.streak?`0 2px 8px ${T.gold}44`:"none"}}>{i<user.streak?"🔥":""}</div>
+            ))}
+          </div>
+        </div>
+        <div className="f-up d3" style={{background:T.card,borderRadius:18,padding:"14px 16px",marginBottom:14,boxShadow:`0 2px 12px ${T.shadow}`}}>
+          <p style={{fontWeight:700,fontSize:13.5,color:T.text,fontFamily:"Sora,sans-serif",marginBottom:12}}>🎯 Missões do dia</p>
+          {missions.map(m=>(
+            <div key={m.id} style={{display:"flex",alignItems:"center",gap:11,padding:"9px 0",borderBottom:`1px solid ${T.border}`}}>
+              <div style={{width:38,height:38,borderRadius:11,background:m.done?T.blueLight:T.slate,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{m.done?"✅":m.icon}</div>
+              <div style={{flex:1}}><p style={{fontSize:13,fontWeight:600,color:m.done?T.sub:T.text,textDecoration:m.done?"line-through":"none",fontFamily:"Sora,sans-serif"}}>{m.text}</p></div>
+              {!m.done&&<div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${T.border}`}}/>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 3: CHAT ──
+function ChatScreen(){
+  const msgs=[
+    {from:"euro",text:"Olá, Ana Santos! 👋\n\nSou o Euro, seu assistente na Eurofarma. Posso te ajudar com:\n• Dúvidas de compliance e ética\n• Como solicitar acessos e processos\n• Informações sobre RH e benefícios\n\nComo posso ajudar hoje?",ts:"09:41"},
+    {from:"user",text:"Posso aceitar brinde de fornecedor?",ts:"09:43"},
+    {from:"euro",text:"🛡️ Brindes de fornecedores são permitidos apenas se o valor for abaixo de R$50 e não visarem influenciar decisões comerciais. Valores acima devem ser recusados ou entregues ao Compliance. Precisa que eu abra um ticket?",ts:"09:43"},
+  ];
+  const suggestions=["Como solicitar acesso?","Posso aceitar brinde?","Como tirar férias?","Treinamentos pendentes"];
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.slate}}>
+      <div style={{background:`linear-gradient(135deg,${T.navy} 0%,${T.navyMid} 70%)`,padding:"14px 16px 18px",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Mascot mood="happy" size={50}/>
+          <div style={{flex:1}}>
+            <p style={{color:"#fff",fontWeight:800,fontSize:17,fontFamily:"Sora,sans-serif"}}>Euro IA</p>
+            <p style={{color:"rgba(255,255,255,.55)",fontSize:12,fontFamily:"DM Sans,sans-serif"}}>● Online — sempre disponível</p>
+          </div>
+        </div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"14px 13px 8px",display:"flex",flexDirection:"column",gap:11}}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:m.from==="user"?"flex-end":"flex-start",alignItems:"flex-end",gap:8}}>
+            {m.from==="euro"&&<div style={{width:28,height:28,borderRadius:"50%",background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>😊</div>}
+            <div style={{maxWidth:"76%",background:m.from==="user"?`linear-gradient(135deg,${T.navy},${T.navyMid})`:T.card,color:m.from==="user"?"#fff":T.text,borderRadius:m.from==="user"?"20px 20px 4px 20px":"20px 20px 20px 4px",padding:"11px 14px",fontSize:13,fontFamily:"DM Sans,sans-serif",lineHeight:1.58,boxShadow:m.from==="euro"?`0 2px 12px ${T.shadow}`:`0 4px 18px ${T.navy}44`,whiteSpace:"pre-line"}}>
+              {m.text}
+              <div style={{marginTop:5,fontSize:10,opacity:.45,textAlign:m.from==="user"?"right":"left",fontFamily:"DM Sans,sans-serif"}}>{m.ts}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{padding:"4px 12px 6px",display:"flex",gap:6,overflowX:"auto",flexShrink:0}}>
+        {suggestions.map((s,i)=>(
+          <button key={i} style={{background:T.blueLight,border:`1px solid ${T.navy}33`,borderRadius:20,padding:"6px 13px",fontSize:11.5,whiteSpace:"nowrap",cursor:"pointer",color:T.navy,fontFamily:"DM Sans,sans-serif",fontWeight:600,flexShrink:0}}>{s}</button>
+        ))}
+      </div>
+      <div style={{padding:"6px 12px 14px",display:"flex",gap:8,background:T.card,borderTop:`1px solid ${T.border}`,flexShrink:0,alignItems:"center"}}>
+        <button style={{width:38,height:38,borderRadius:"50%",background:T.slate,border:"none",cursor:"pointer",fontSize:17,flexShrink:0}}>🎤</button>
+        <div style={{flex:1,border:`1.5px solid ${T.border}`,borderRadius:24,padding:"11px 16px",fontSize:13.5,fontFamily:"DM Sans,sans-serif",background:T.slate,color:T.sub}}>Pergunte ao Euro...</div>
+        <button style={{width:42,height:42,borderRadius:"50%",border:"none",cursor:"pointer",background:T.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>➤</button>
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 4: EXPLORER ──
+function ExplorerScreen(){
+  const courses=[
+    {id:0,icon:"🏭",title:"Segurança na Planta Industrial",tag:"⚠️ Obrigatório",color:"#FF6B35",bg:"#FFF0EA",prog:60,mods:5},
+    {id:1,icon:"🧪",title:"Boas Práticas de Laboratório",tag:"✅ Concluído",color:T.gold,bg:T.blueLight,prog:100,mods:4},
+    {id:2,icon:"💊",title:"Farmacovigilância Básica",tag:"🆕 Novo",color:T.blue,bg:T.blueLight,prog:20,mods:6},
+    {id:3,icon:"📊",title:"Gestão da Qualidade – BPF",tag:"🔒 Em breve",color:T.sub,bg:T.slate,prog:0,mods:7},
+    {id:4,icon:"🛡️",title:"Compliance e Código de Ética",tag:"⚠️ Obrigatório",color:"#7B2FBE",bg:"#F3E8FF",prog:35,mods:5},
+  ];
+  const filters=["Todos","▶ Em Andamento","🆕 Não Iniciado","✅ Concluídos"];
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.slate}}>
+      <div style={{background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,padding:"16px 18px 20px",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Mascot mood="happy" size={50}/>
+          <div>
+            <h2 style={{color:"#fff",fontSize:19,fontWeight:800,fontFamily:"Sora,sans-serif"}}>🚀 Explorer</h2>
+            <p style={{color:"rgba(255,255,255,.65)",fontSize:12.5,fontFamily:"DM Sans,sans-serif"}}>Sua trilha de aprendizado</p>
+          </div>
+        </div>
+        <div style={{marginTop:14,background:"rgba(255,255,255,.2)",borderRadius:20,height:7,overflow:"hidden"}}>
+          <div style={{width:"17%",height:"100%",background:T.gold,borderRadius:20}}/>
+        </div>
+        <p style={{color:"rgba(255,255,255,.6)",fontSize:11,marginTop:4,fontFamily:"DM Sans,sans-serif"}}>1 / 5 treinamentos concluídos</p>
+      </div>
+      <div style={{background:T.card,borderBottom:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:7,overflowX:"auto",flexShrink:0}}>
+        {filters.map((f,i)=>(
+          <button key={i} style={{border:"none",borderRadius:20,padding:"7px 15px",fontSize:11.5,fontWeight:i===0?700:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,fontFamily:"Sora,sans-serif",background:i===0?T.navy:T.slate,color:i===0?"#fff":T.sub,boxShadow:i===0?`0 3px 12px ${T.navy}44`:"none"}}>{f}</button>
+        ))}
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 8px"}}>
+        {courses.map(c=>(
+          <div key={c.id} style={{background:T.card,borderRadius:20,marginBottom:12,boxShadow:`0 2px 14px ${T.shadow}`,overflow:"hidden"}}>
+            <div style={{padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start"}}>
+              <div style={{width:52,height:52,borderRadius:14,background:c.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,flexShrink:0}}>{c.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
+                  <p style={{fontWeight:700,fontSize:13.5,color:T.text,fontFamily:"Sora,sans-serif",lineHeight:1.3}}>{c.title}</p>
+                  <span style={{fontSize:10.5,fontWeight:600,color:c.color,background:c.bg,padding:"3px 9px",borderRadius:10,fontFamily:"DM Sans,sans-serif",flexShrink:0}}>{c.tag}</span>
+                </div>
+                <p style={{fontSize:12,color:T.sub,marginTop:4,fontFamily:"DM Sans,sans-serif"}}>{c.mods} módulos</p>
+                {c.prog>0&&(
+                  <>
+                    <div style={{marginTop:8,background:T.slate,borderRadius:20,height:5,overflow:"hidden"}}>
+                      <div style={{width:`${c.prog}%`,height:"100%",background:c.color,borderRadius:20}}/>
+                    </div>
+                    <p style={{fontSize:11,color:T.sub,marginTop:3,fontFamily:"DM Sans,sans-serif"}}>{c.prog}% concluído</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 5: DOCS ──
+function DocsScreen(){
+  const docs=[
+    {id:1,icon:"📋",title:"Código de Ética e Conduta",cat:"Compliance",color:"#7B2FBE",date:"Jan 2024",size:"2.3 MB",pages:42},
+    {id:2,icon:"🏭",title:"Manual de Segurança da Planta",cat:"Segurança",color:"#FF6B35",date:"Mar 2024",size:"5.1 MB",pages:88},
+    {id:3,icon:"💊",title:"Procedimento de Farmacovigilância",cat:"Qualidade",color:T.blue,date:"Fev 2024",size:"1.8 MB",pages:31},
+    {id:4,icon:"👥",title:"Manual do Colaborador 2024",cat:"RH",color:"#2E9E5B",date:"Jan 2024",size:"3.2 MB",pages:56},
+    {id:5,icon:"🔬",title:"Boas Práticas de Laboratório (BPL)",cat:"Qualidade",color:T.navy,date:"Dez 2023",size:"4.4 MB",pages:72},
+  ];
+  const CAT_META={Compliance:{color:"#7B2FBE",bg:"#F3E8FF"},Segurança:{color:"#FF6B35",bg:"#FFF0EA"},Qualidade:{color:T.blue,bg:T.blueLight},RH:{color:"#2E9E5B",bg:"#E8F8EF"}};
+  const cats=["Todos","Compliance","Segurança","Qualidade","RH","⭐ Favoritos"];
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.slate}}>
+      <div style={{background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,padding:"16px 18px 18px",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Mascot mood="idea" size={50}/>
+          <div>
+            <h2 style={{color:"#fff",fontSize:19,fontWeight:800,fontFamily:"Sora,sans-serif"}}>📚 Documentos</h2>
+            <p style={{color:"rgba(255,255,255,.65)",fontSize:12.5,fontFamily:"DM Sans,sans-serif"}}>{docs.length} documentos disponíveis</p>
+          </div>
+        </div>
+        <div style={{marginTop:14,background:"rgba(255,255,255,.12)",borderRadius:14,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:16,opacity:.6}}>🔍</span>
+          <div style={{flex:1,fontSize:13.5,fontFamily:"DM Sans,sans-serif",color:"rgba(255,255,255,.4)"}}>Buscar documentos...</div>
+        </div>
+      </div>
+      <div style={{background:T.card,borderBottom:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:7,overflowX:"auto",flexShrink:0}}>
+        {cats.map((c,i)=>(
+          <button key={i} style={{border:"none",borderRadius:20,padding:"7px 15px",fontSize:12,fontWeight:i===0?700:500,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,fontFamily:"Sora,sans-serif",background:i===0?T.navy:T.slate,color:i===0?"#fff":T.sub}}>{c}</button>
+        ))}
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px 12px"}}>
+        {docs.map(doc=>{
+          const meta=CAT_META[doc.cat]||{color:T.navy,bg:T.blueLight};
+          return(
+            <div key={doc.id} style={{background:T.card,borderRadius:16,padding:"13px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:12,boxShadow:`0 2px 10px ${T.shadow}`,cursor:"pointer",borderLeft:`4px solid ${doc.color}`}}>
+              <div style={{width:44,height:44,borderRadius:13,background:meta.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:21,flexShrink:0}}>{doc.icon}</div>
+              <div style={{flex:1,minWidth:0}}>
+                <p style={{fontWeight:700,fontSize:13,color:T.text,fontFamily:"Sora,sans-serif",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.title}</p>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginTop:5}}>
+                  <span style={{fontSize:10.5,fontWeight:700,background:meta.bg,color:meta.color,padding:"2px 9px",borderRadius:9,fontFamily:"DM Sans,sans-serif"}}>{doc.cat}</span>
+                  <span style={{fontSize:11,color:T.sub,fontFamily:"DM Sans,sans-serif"}}>{doc.date} · {doc.size}</span>
+                </div>
+              </div>
+              <button style={{background:"none",border:"none",cursor:"pointer",fontSize:20,flexShrink:0,lineHeight:1}}>☆</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── SCREEN 6: PROFILE ──
+function ProfileScreen(){
+  const user={name:"Ana Santos",role:"Farmacêutica Sênior",plant:"SP – Guarulhos",streak:7};
+  return(
+    <div style={{height:"100%",display:"flex",flexDirection:"column",background:T.slate}}>
+      <div style={{background:`linear-gradient(150deg,${T.navy},${T.navyMid})`,padding:"20px 18px 70px",position:"relative",flexShrink:0}}>
+        <div style={{position:"absolute",bottom:-32,left:"50%",transform:"translateX(-50%)"}}>
+          <div style={{width:68,height:68,borderRadius:"50%",background:`linear-gradient(135deg,${T.gold},${T.blue})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,border:"4px solid #fff",boxShadow:`0 4px 20px ${T.gold}44`}}>👩</div>
+        </div>
+        <p style={{color:"rgba(255,255,255,.5)",fontSize:11.5,fontFamily:"DM Sans,sans-serif",textAlign:"center"}}>Perfil do colaborador</p>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"50px 16px 14px"}}>
+        <div style={{textAlign:"center",marginBottom:18}}>
+          <p style={{fontWeight:800,fontSize:20,color:T.text,fontFamily:"Sora,sans-serif"}}>{user.name}</p>
+          <p style={{color:T.sub,fontSize:13.5,fontFamily:"DM Sans,sans-serif",marginTop:2}}>{user.role} · {user.plant}</p>
+          <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:12}}>
+            <div style={{textAlign:"center"}}>
+              <p style={{fontWeight:800,fontSize:22,color:T.text,fontFamily:"Sora,sans-serif"}}>🔥 {user.streak}</p>
+              <p style={{fontSize:12,color:T.sub,fontFamily:"DM Sans,sans-serif",marginTop:3}}>Dias de ofensiva</p>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <p style={{fontWeight:800,fontSize:22,color:T.text,fontFamily:"Sora,sans-serif"}}>📚 2</p>
+              <p style={{fontSize:12,color:T.sub,fontFamily:"DM Sans,sans-serif",marginTop:3}}>Cursos</p>
+            </div>
+          </div>
+        </div>
+
+        {[["🔔","Notificações","Ativadas"],["❓","Ajuda","Central de suporte"],["🚪","Sair",""]].map(([icon,label,val],i)=>(
+          <div key={i} style={{background:T.card,borderRadius:14,padding:"13px 16px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer",boxShadow:`0 1px 6px ${T.shadow}`}}>
+            <span style={{fontSize:20}}>{icon}</span>
+            <p style={{flex:1,fontWeight:600,fontSize:13.5,color:i===2?T.coral:T.text,fontFamily:"Sora,sans-serif"}}>{label}</p>
+            <p style={{fontSize:12.5,color:T.sub,fontFamily:"DM Sans,sans-serif"}}>{val} ›</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── ROOT ──
+function App(){
+  const screens=[
+    {id:"login",  label:"01 — Login",    bar:T.navy,    comp:<LoginScreen/>},
+    {id:"home",   label:"02 — Dashboard",bar:T.navy,    comp:<DashboardScreen/>},
+    {id:"chat",   label:"03 — Euro IA",  bar:T.navyMid, comp:<ChatScreen/>},
+    {id:"explorer",label:"04 — Explorer",bar:T.navyMid, comp:<ExplorerScreen/>},
+    {id:"docs",   label:"05 — Documentos",bar:T.navyMid,comp:<DocsScreen/>},
+    {id:"profile",label:"06 — Perfil",   bar:T.navy,    comp:<ProfileScreen/>},
+  ];
+  return(
+    <>
+      <div style={{textAlign:"center",marginBottom:48}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:12,marginBottom:18}}>
+          <div style={{width:46,height:46,borderRadius:14,background:`linear-gradient(135deg,${T.navy},${T.navyMid})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>💊</div>
+          <p style={{color:"#fff",fontWeight:800,fontSize:28,fontFamily:"Sora,sans-serif",letterSpacing:-.5}}>Euro<span style={{color:T.gold}}>flow</span></p>
+        </div>
+        <p className="page-title" style={{marginTop:4}}>Protótipo de Telas</p>
+        <p className="page-sub">6 telas · Design System Eurofarma · by AXIOM</p>
+      </div>
+      <div className="screens-grid">
+        {screens.map((s,i)=>(
+          <div key={s.id} className="screen-wrap">
+            <Phone bar={s.bar}>
+              {s.id==="login" ? s.comp : (
+                <div style={{height:"100%",display:"flex",flexDirection:"column"}}>
+                  <div style={{flex:1,overflow:"hidden",position:"relative"}}>{s.comp}</div>
+                  <Nav active={s.id} onChange={()=>{}}/>
+                </div>
+              )}
+            </Phone>
+            <div style={{textAlign:"center"}}>
+              <div style={{background:"rgba(245,200,0,.15)",color:T.gold,border:"1px solid rgba(245,200,0,.3)",padding:"4px 14px",borderRadius:20,display:"inline-block",fontSize:11,fontWeight:700,fontFamily:"DM Sans,sans-serif",letterSpacing:1}}>{s.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
